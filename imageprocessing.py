@@ -1,6 +1,9 @@
 import cv2
+print(cv2.__version__)
+print(cv2.getBuildInformation())
 im01= cv2.imread('test_images/im01-RET029OD.jpg', cv2.IMREAD_COLOR)
 im02= cv2.imread('test_images/im02-RET031OS.jpg', cv2.IMREAD_COLOR)
+
 
 #median (Removing salt and pepper noise) for validation 4
 median1_3 = cv2.medianBlur(im01, 3)
@@ -69,3 +72,4 @@ for filename in os.listdir(dir_path):
 
 # Show the histogram for all images
 plt.show()
+
