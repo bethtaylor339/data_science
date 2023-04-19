@@ -1,8 +1,8 @@
 import cv2
-print(cv2.__version__)
-print(cv2.getBuildInformation())
 im01= cv2.imread('test_images/im01-RET029OD.jpg', cv2.IMREAD_COLOR)
+
 im02= cv2.imread('test_images/im02-RET031OS.jpg', cv2.IMREAD_COLOR)
+
 
 
 #median (Removing salt and pepper noise) for validation 4
@@ -69,7 +69,17 @@ for filename in os.listdir(dir_path):
     # Calculate and plot the histogram
     hist = cv2.calcHist([img], [0], None, [256], [0,256])
     plt.plot(hist)
+plt.show()
+
+color = ('b','g','r')
+
+for i,col in enumerate(color):
+    histr = cv2.calcHist([im01],[i],None,[255],[1,255])
+    plt.plot(histr,color = col)
+    plt.xlim([1,256])
+    
+plt.show()
 
 # Show the histogram for all images
-plt.show()
+
 
