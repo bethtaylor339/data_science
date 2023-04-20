@@ -65,29 +65,51 @@ for filename in os.listdir(input_dir):
         cv2.circle(mask, center, radius, 255, -1)
 
         # Extracting a similar section
-        section = img[128:162, 188:232]
+        section = img[120:160, 190:230]
 
         # Resize the mask to match the size of the image using interpolation
-        mask_resized = cv2.resize(mask, img.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
+        mask_resized = cv2.resize(mask, img.shape[:2][::-1], interpolation=cv2.INTER_LANCZOS4)
 
         # Inpaint the corrupted region in the color image using the extracted section
-        inpainted_color = cv2.inpaint(img, mask_resized, 3, cv2.INPAINT_NS)
+        inpainted_color = cv2.inpaint(img, mask_resized, 3, cv2.INPAINT_TELEA)
 
         # Resize the section to match the size of the inpainted region
-        section_resized = cv2.resize(section, inpainted_color.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
-        cv2.imshow('image', section_resized)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        section_resized = cv2.resize(section, inpainted_color.shape[:2][::-1], interpolation=cv2.INTER_LANCZOS4)
+    
         # Replace the inpainted region with the extracted section
-        output = inpainted_color.copy()
-        output[mask_resized != 0] = section_resized[mask_resized != 0]
-
-        # Display the output image
-        cv2.imshow('image', output)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        processed_img = inpainted_color.copy()
+        processed_img[mask_resized != 0] = section_resized[mask_resized != 0]
 
 
+        # Dewarping and removing borders
+        gray = cv2.cvtColor(processed_img, cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(gray, 10, 255, 0)       
+
+
+        
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE,
+                               cv2.CHAIN_APPROX_SIMPLE)
+  
+        # take the first contour
+        cnt = contours[0]
+        #https://www.geeksforgeeks.org/finding-minimum-enclosing-rectangle-in-opencv-python/
+        rect = cv2.minAreaRect(cnt)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        box_img = cv2.drawContours(processed_img, [box], 0, (0, 0, 255), 2)
+
+        extent = np.float32([[0,0], [255,0], [255,255], [0,255]])
+        bounds = np.float32(box)
+
+        M = cv2.getPerspectiveTransform(bounds, extent)
+
+        # Apply the transformation to the image
+        processed_img = cv2.warpPerspective(processed_img, M, (256, 256))
+        
+        #median (salt and pepper noise removal)
+        processed_img = cv2.medianBlur(processed_img, 5)
+        processed_img = cv2.GaussianBlur(processed_img, (5,5), 10)
+        
 
         # Save the processed image to the output directory
         output_path = os.path.join(output_dir, filename)
