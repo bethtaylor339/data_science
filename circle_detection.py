@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 input_dir = "image-processing-files/test_images/"
-output_dir = "image-processing-files/results/"
 for filename in os.listdir(input_dir):
     # Check if the file is an image
     if filename.endswith(".jpg"):

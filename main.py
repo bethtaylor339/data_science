@@ -16,27 +16,27 @@ for filename in os.listdir(input_dir):
 
         # Image processing
 
-        # Using (similar) coordinates to inpaint- not the exact same as I found it wasn't perfect
+        processed_img = img
+       
+        ###INPAINTING
+        # Using (similar) coordinates to inpaint
         mask = np.zeros_like(img[:,:,0])
         centre = (188, 212)
         radius = 22
         cv2.circle(mask, centre, radius, 255, -1)
 
-        # Extracting a similar section
+        # Similar section
         section = img[120:160, 190:230]
 
-        # Resize the mask to match the size of the image using interpolation
-        mask_resized = cv2.resize(mask, img.shape[:2][::-1], interpolation=cv2.INTER_LANCZOS4)
-
         # Inpaint the corrupted region in the color image using the extracted section
-        inpainted_color = cv2.inpaint(img, mask_resized, 3, cv2.INPAINT_TELEA)
+        inpainted_color = cv2.inpaint(img, mask, 3, cv2.INPAINT_TELEA)
 
         # Resize the section to match the size of the inpainted region
         section_resized = cv2.resize(section, inpainted_color.shape[:2][::-1], interpolation=cv2.INTER_LANCZOS4)
     
         # Replace the inpainted region with the extracted section
         processed_img = inpainted_color.copy()
-        processed_img[mask_resized != 0] = section_resized[mask_resized != 0]
+        processed_img[mask != 0] = section_resized[mask != 0]
 
 
         # Dewarping and removing borders
@@ -64,36 +64,89 @@ for filename in os.listdir(input_dir):
         # Apply the transformation to the image
         processed_img = cv2.warpPerspective(processed_img, M, (256, 256))
         
-        #median (salt and pepper noise removal)
+        #median (salt and pepper noise removal) (better after dewarping and stuff)
         processed_img = cv2.medianBlur(processed_img, 5)
-        processed_img = cv2.GaussianBlur(processed_img, (5,5), 10)
+       
+        ###SHARPENING
+        
+        
+        # Create a sharpening filter
+        kernel = np.array([[0,-1,0], [-1,5,-1], [0,-1,0]])
+        
+        # Apply the sharpening filter to the blurred image
+        processed_img= cv2.filter2D(processed_img, -1, kernel)
+        processed_img = cv2.GaussianBlur(processed_img, (5,5), 30)
 
-        #Hist Equalisation
-        img_yuv = cv2.cvtColor(processed_img, cv2.COLOR_RGB2YUV)
+        
 
-        # Apply histogram equalization to the Y channel
-        img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+         #### REDUCING INTENSITY OF RED CHANNEL
 
-        # Convert the image back to the original color space
-        processed_img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-        processed_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+        b, g, r = cv2.split(processed_img)
+
+        # Reduce the intensity of the red channel
+        r = cv2.addWeighted(r, 0.8, 0, 0, 0)
+
+        # Merge the channels back together
+        processed_img = cv2.merge((b, g, r))
+        
+
+        #Hist equalisation- using Lab (https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv)
+        lab= cv2.cvtColor(processed_img, cv2.COLOR_BGR2LAB)
+        l_channel, a, b = cv2.split(lab)
+
+        # Applying CLAHE to L-channel
+        # feel free to try different values for the limit and grid size:
+        clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8,8))
+        cl = clahe.apply(l_channel)
+     
+        # merge the CLAHE enhanced L-channel with the a and b channel
+        limg = cv2.merge((cl,a,b))
+
+        # Converting image from LAB Color model to BGR color spcae
+        processed_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+       
+
+
+
+        #### BRIGHTNESS & CONTRAST
+
+        # # Define the brightness and contrast adjustments
+        # alpha = 1.5 # Contrast control (1.0-3.0)
+        # beta = 50 # Brightness control (0-100)
+
+        # # Apply the brightness and contrast adjustments
+        # adjusted = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+                
+
+
+        ####Hist Equalisation
+        # img_yuv = cv2.cvtColor(processed_img, cv2.COLOR_RGB2YUV)
+
+        # # Apply histogram equalization to the Y channel
+        # img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+        # # Convert the image back to the original color space
+        # processed_img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+        # processed_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
         # # Exponential transform to increase contrast
-        # gamma = 3.0
+        # gamma = 2.0
         # inv_gamma = 1.0 / gamma
         # table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype('uint8')
         # # Apply the exponential transform to the image
         # processed_img = cv2.LUT(processed_img, table)
 
 
-        # #Brightness and Contrast- not sure how good this is
-        # target_mean = 120
-
+        # # #Brightness and Contrast- not sure how good this is
+        # target_mean = 100
+        # target_sd = 20
         # gray = cv2.cvtColor(processed_img, cv2.COLOR_BGR2GRAY)
         # mean_pixel = np.mean(gray)
-        # scale_factor = target_mean / mean_pixel
-        # difference = abs(target_mean- mean_pixel)
+        # sd_pixel = np.std(gray)
+        # scale_factor = mean_pixel/target_mean
+        # #scale_factor = target_sd / sd_pixel
+        # difference = (target_mean- mean_pixel)
         # # Adjust the contrast and brightness
-        # processed_img = cv2.convertScaleAbs(processed_img, alpha=1, beta=-10)
+        # processed_img = cv2.convertScaleAbs(processed_img, alpha=2, beta=-difference)
 
         # Save the processed image to the output directory
         output_path = os.path.join(output_dir, filename)
