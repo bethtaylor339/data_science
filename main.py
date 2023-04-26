@@ -91,7 +91,8 @@ for filename in os.listdir(input_dir):
         # processed_img = cv2.merge((b, g, r))
         
 
-        # #Hist equalisation- using Lab (https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv)
+        ### Hist equalisation-  method 1- to equalise colour channels
+        # using Lab (https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv)
         # lab= cv2.cvtColor(processed_img, cv2.COLOR_BGR2LAB)
         # l_channel, a, b = cv2.split(lab)
 
@@ -109,18 +110,10 @@ for filename in os.listdir(input_dir):
 
 
 
-        ### BRIGHTNESS & CONTRAST
-
-        # # Define the brightness and contrast adjustments
-        # alpha = 2 # Contrast control (1.0-3.0)
-        # beta = 50 # Brightness control (0-100)
-
-        # # Apply the brightness and contrast adjustments
-        # adjusted = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
-                
+        
 
 
-        ####Hist Equalisation
+        ####Hist Equalisation- method 2- to equalise colour channels
         # img_yuv = cv2.cvtColor(processed_img, cv2.COLOR_RGB2YUV)
 
         # # Apply histogram equalization to the Y channel
@@ -137,7 +130,18 @@ for filename in os.listdir(input_dir):
         # processed_img = cv2.LUT(processed_img, table)
 
 
-        # # #Brightness and Contrast- not sure how good this is
+
+        ### BRIGHTNESS & CONTRAST
+
+        # # Define the brightness and contrast adjustments
+        # alpha = 2 # Contrast control (1.0-3.0)
+        # beta = 50 # Brightness control (0-100)
+
+        # # Apply the brightness and contrast adjustments
+        # processed_img = cv2.convertScaleAbs(processed_img, alpha=alpha, beta=beta)
+                
+
+        ### Brightness and Contrast- but specific to image mean and std deviation
         # target_mean = 100
         # target_sd = 20
         # gray = cv2.cvtColor(processed_img, cv2.COLOR_BGR2GRAY)
@@ -145,9 +149,9 @@ for filename in os.listdir(input_dir):
         # sd_pixel = np.std(gray)
         # scale_factor = mean_pixel/target_mean
         # #scale_factor = target_sd / sd_pixel
-        # difference = (target_mean- mean_pixel)
+        # difference = (target_mean- mean_pixel)*scale_factor
         # # Adjust the contrast and brightness
-        # processed_img = cv2.convertScaleAbs(processed_img, alpha=2, beta=difference/2)
+        # processed_img = cv2.convertScaleAbs(processed_img, alpha=scale_factor, beta=difference)
 
         # Save the processed image to the output directory
         output_path = os.path.join(output_dir, filename)
