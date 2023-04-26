@@ -33,11 +33,44 @@ for filename in os.listdir(input_dir):
             histr = cv2.calcHist([img],[i],None,[255],[1,255])
             plt.plot(histr,color = col)
             plt.xlim([1,256])
+            plt.ylim([1,10000])
             plt.xlabel('Pixel value')
             plt.ylabel('Count')
+            plt.title('BGR values histogram')
         
 plt.savefig('BGR values histogram')
 
+img=im37
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+ret, thresh = cv2.threshold(gray, 10, 255, 0)
+cv2.imwrite('threshold.jpg', thresh)
+#dewarping and removing borders 2
+# finding the contours
+contours, _ = cv2.findContours(thresh, cv2.RETR_TREE,
+                            cv2.CHAIN_APPROX_SIMPLE)
+
+# take the first contour
+cnt = contours[0]
+
+rect = cv2.minAreaRect(cnt)
+box = cv2.boxPoints(rect)
+box = np.int0(box)
+
+box_img = cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+
+cv2.imwrite('box_img.jpg', box_img)
+#dewarping and removing borders 3
+
+extent = np.float32([[0,0], [255,0], [255,255], [0,255]])
+bounds = np.float32(box)
+
+M = cv2.getPerspectiveTransform(bounds, extent)
+
+# Apply the transformation to the image
+result = cv2.warpPerspective(img, M, (256, 256))
+cv2.imwrite('dewarped.jpg', result)
+
+im37= cv2.imread('image-processing-files/test_images/im37-RET112OD.jpg', cv2.IMREAD_COLOR)
 # Image 23 noise removal
 
 kernel = np.ones((5,5), np.uint8)
@@ -72,5 +105,5 @@ cv2.imwrite('im37_closing.jpg', closing)
 cv2.imwrite('im37_median.jpg', median)
 cv2.imwrite('im37_bilateral.jpg', bilateral)
 cv2.imwrite('im37_gaussian.jpg', gaussian)
-cv2.imwrite('im23_nmeans.jpg', nmeans)
+cv2.imwrite('im37_nmeans.jpg', nmeans)
 

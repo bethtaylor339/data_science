@@ -65,8 +65,9 @@ for filename in os.listdir(input_dir):
         processed_img = cv2.warpPerspective(processed_img, M, (256, 256))
         
         #median (salt and pepper noise removal) (better after dewarping and stuff)
-        processed_img = cv2.medianBlur(processed_img, 5)
-       
+        # processed_img = cv2.medianBlur(processed_img, 5)
+        kernel = np.ones((3,3), np.uint8)
+        processed_img= cv2.dilate(processed_img, kernel, iterations=1)
         ###SHARPENING
         
         
@@ -79,39 +80,39 @@ for filename in os.listdir(input_dir):
 
         
 
-         #### REDUCING INTENSITY OF RED CHANNEL
+        #  #### REDUCING INTENSITY OF RED CHANNEL
 
-        b, g, r = cv2.split(processed_img)
+        # b, g, r = cv2.split(processed_img)
 
-        # Reduce the intensity of the red channel
-        r = cv2.addWeighted(r, 0.8, 0, 0, 0)
+        # # Reduce the intensity of the red channel
+        # r = cv2.addWeighted(r, 0.8, 0, 0, 0)
 
-        # Merge the channels back together
-        processed_img = cv2.merge((b, g, r))
+        # # Merge the channels back together
+        # processed_img = cv2.merge((b, g, r))
         
 
-        #Hist equalisation- using Lab (https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv)
-        lab= cv2.cvtColor(processed_img, cv2.COLOR_BGR2LAB)
-        l_channel, a, b = cv2.split(lab)
+        # #Hist equalisation- using Lab (https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv)
+        # lab= cv2.cvtColor(processed_img, cv2.COLOR_BGR2LAB)
+        # l_channel, a, b = cv2.split(lab)
 
-        # Applying CLAHE to L-channel
-        # feel free to try different values for the limit and grid size:
-        clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8,8))
-        cl = clahe.apply(l_channel)
+        # # Applying CLAHE to L-channel
+        # # feel free to try different values for the limit and grid size:
+        # clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8,8))
+        # cl = clahe.apply(l_channel)
      
-        # merge the CLAHE enhanced L-channel with the a and b channel
-        limg = cv2.merge((cl,a,b))
+        # # merge the CLAHE enhanced L-channel with the a and b channel
+        # limg = cv2.merge((cl,a,b))
 
-        # Converting image from LAB Color model to BGR color spcae
-        processed_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+        # # Converting image from LAB Color model to BGR color spcae
+        # processed_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
        
 
 
 
-        #### BRIGHTNESS & CONTRAST
+        ### BRIGHTNESS & CONTRAST
 
         # # Define the brightness and contrast adjustments
-        # alpha = 1.5 # Contrast control (1.0-3.0)
+        # alpha = 2 # Contrast control (1.0-3.0)
         # beta = 50 # Brightness control (0-100)
 
         # # Apply the brightness and contrast adjustments
@@ -146,7 +147,7 @@ for filename in os.listdir(input_dir):
         # #scale_factor = target_sd / sd_pixel
         # difference = (target_mean- mean_pixel)
         # # Adjust the contrast and brightness
-        # processed_img = cv2.convertScaleAbs(processed_img, alpha=2, beta=-difference)
+        # processed_img = cv2.convertScaleAbs(processed_img, alpha=2, beta=difference/2)
 
         # Save the processed image to the output directory
         output_path = os.path.join(output_dir, filename)
